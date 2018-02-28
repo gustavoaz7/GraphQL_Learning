@@ -1,5 +1,5 @@
 const graphql = require('graphql')
-const _ = require('lodash')
+const axios = require('axios')
 const {
   GraphQLObjectType,
   GraphQLString,
@@ -7,18 +7,29 @@ const {
   GraphQLSchema
 } = graphql
 
-const usersExample = [
-  { id: '06', firstName: 'Gus', age: 25 },
-  { id: '14', firstName: 'Sam', age: 19 },
-  { id: '31', firstName: 'Ana', age: 22 }
-]
+const CompanyType = new GraphQLObjectType({
+  name: "Company",
+  fields: {
+    id: { type: GraphQLString },
+    name: { type: GraphQLString },
+    description: { type: GraphQLString }
+  }
+})
 
 const UserType = new GraphQLObjectType({
   name: "User",
   fields: {
     id: { type: GraphQLString },
     firstName: { type: GraphQLString },
-    age: { type: GraphQLInt }
+    age: { type: GraphQLInt },
+    company: { 
+      type: CompanyType,
+      // resolve function will populate `company` property since there is no matching property from user model
+      resolve(parentValue, args) {
+        return axios.get(`http://localhost:3000/companies/${parentValue.companyId}`)
+        .then(res => res.data)
+      }
+    }
   }
 })
 
@@ -29,7 +40,8 @@ const RootQuery = new GraphQLObjectType({
       type: UserType,
       args: { id: { type: GraphQLString } },
       resolve(parentValue, args) {
-        return _.find(usersExample, { id: args.id } )
+        return axios.get(`http://localhost:3000/users/${args.id }`)
+        .then(res => res.data)
       }
     }
   }
