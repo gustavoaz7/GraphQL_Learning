@@ -5,7 +5,8 @@ const {
   GraphQLString,
   GraphQLInt,
   GraphQLSchema,
-  GraphQLList
+  GraphQLList,
+  GraphQLNonNull
 } = graphql
 
 const CompanyType = new GraphQLObjectType({
@@ -72,6 +73,50 @@ const RootQuery = new GraphQLObjectType({
   }
 })
 
+const mutation = new GraphQLObjectType({
+  name: 'Mutation',
+  fields: {
+    addUser: {
+      type: UserType,
+      args: {
+        firstName: { type: new GraphQLNonNull(GraphQLString) },
+        age: { type: new GraphQLNonNull(GraphQLInt) },
+        companyId: { type: GraphQLString }
+      },
+      resolve(parentValue, { firstName, age }) {
+        return axios.post(`http://localhost:3000/users`, { firstName, age })
+          .then(res => res.data)
+      }
+    },
+    deleteUser: {
+      type: UserType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) }
+      },
+      resolve(parentValue, { id }) {
+        return axios.delete(`http://localhost:3000/users/${id}`)
+          .then(res => res.data)
+      }
+    },
+    updateUser: {
+      type: UserType,
+      args: {
+        id: { type: new GraphQLNonNull(GraphQLString) },
+        firstName: { type: GraphQLString },
+        age: { type: GraphQLInt },
+        companyId: { type: GraphQLString}
+      },
+      resolve(parentValue, args) {
+        // patch request updated the given object preserving non-specified fields
+        // put request would update all non-specified fields to NULL
+        return axios.patch(`http://localhost:3000/users/${args.id}`, args)
+          .then(res => res.data)
+      }
+    }
+  }
+})
+
 module.exports = new GraphQLSchema({
-  query: RootQuery
+  query: RootQuery,
+  mutation
 })
